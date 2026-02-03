@@ -1,14 +1,26 @@
 services:
   clawskills:
     build: .
-    ports:
-      - "8000:8000"
+    container_name: clawskills
     volumes:
       - clawskills_data:/data
     environment:
       - DATABASE_URL=sqlite+aiosqlite:////data/clawskills.db
       - API_KEYS_SEED=${API_KEYS_SEED:-}
     restart: unless-stopped
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.clawskills.rule=Host(`clawskills.home.v9n.us`)"
+      - "traefik.http.routers.clawskills.entrypoints=websecure"
+      - "traefik.http.routers.clawskills.tls.certresolver=le"
+      - "traefik.http.services.clawskills.loadbalancer.server.port=8000"
 
 volumes:
   clawskills_data:
+
+networks:
+  traefik:
+    external: true
+    name: docker-services_default
