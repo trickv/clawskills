@@ -1,1 +1,1 @@
-# Tests for ClawdSkills
+# Tests for ClawSkills

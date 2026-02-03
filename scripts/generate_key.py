@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate API keys for ClawdSkills."""
+"""Generate API keys for ClawSkills."""
 
 import argparse
 import asyncio
@@ -15,7 +15,7 @@ from app.crud import create_api_key
 
 
 async def main():
-    parser = argparse.ArgumentParser(description="Generate API keys for ClawdSkills")
+    parser = argparse.ArgumentParser(description="Generate API keys for ClawSkills")
     parser.add_argument("--label", "-l", help="Label for the API key", default=None)
     parser.add_argument("--init-db", action="store_true", help="Initialize database first")
     args = parser.parse_args()

@@ -1,4 +1,4 @@
-"""Tests for ClawdSkills API."""
+"""Tests for ClawSkills API."""
 
 import pytest
 import pytest_asyncio

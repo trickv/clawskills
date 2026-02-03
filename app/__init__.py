@@ -1,2 +1,2 @@
-# ClawdSkills - AI Agent Skill Registry
+# ClawSkills - AI Agent Skill Registry
 __version__ = "0.1.0"

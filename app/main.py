@@ -1,4 +1,4 @@
-"""ClawdSkills - AI Agent Skill Registry."""
+"""ClawSkills - AI Agent Skill Registry."""
 
 import os
 import logging
@@ -54,13 +54,13 @@ async def lifespan(app: FastAPI):
                 await crud.create_api_key(db, key_hash, "Bootstrap Key")
                 logger.info("Bootstrap API key created")
     
-    logger.info("ClawdSkills ready!")
+    logger.info("ClawSkills ready!")
     yield
     logger.info("Shutting down...")
 
 
 app = FastAPI(
-    title="ClawdSkills",
+    title="ClawSkills",
     description="AI Agent Skill Registry - Share and discover skills that help agents solve tasks",
     version=__version__,
     lifespan=lifespan,

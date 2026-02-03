@@ -1,4 +1,4 @@
-"""SQLAlchemy models for ClawdSkills."""
+"""SQLAlchemy models for ClawSkills."""
 
 import uuid
 from datetime import datetime
