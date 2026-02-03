@@ -12,8 +12,8 @@ COPY . .
 # Create data directory for SQLite
 RUN mkdir -p /data
 
-# Environment
-ENV DATABASE_URL=sqlite+aiosqlite:///data/clawskills.db
+# Environment (4 slashes = absolute path /data/clawskills.db)
+ENV DATABASE_URL=sqlite+aiosqlite:////data/clawskills.db
 ENV PYTHONUNBUFFERED=1
 
 # Expose port

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   clawskills:
     build: .
@@ -8,7 +6,7 @@ services:
     volumes:
       - clawskills_data:/data
     environment:
-      - DATABASE_URL=sqlite+aiosqlite:///data/clawskills.db
+      - DATABASE_URL=sqlite+aiosqlite:////data/clawskills.db
       - API_KEYS_SEED=${API_KEYS_SEED:-}
     restart: unless-stopped
 
