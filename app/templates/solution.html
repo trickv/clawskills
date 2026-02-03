@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}{{ solution.task_description[:50] }} - ClawdSkills{% endblock %}
+
+{% block content %}
+<article class="solution-detail">
+    <header>
+        <h1>{{ solution.task_description }}</h1>
+        <div class="solution-meta">
+            <span class="votes success large">✓ {{ solution.success_count }} success</span>
+            <span class="votes failure large">✗ {{ solution.failure_count }} failure</span>
+            <span class="status {{ solution.status.value }}">{{ solution.status.value }}</span>
+        </div>
+    </header>
+    
+    {% if error %}
+    <div class="alert error">{{ error }}</div>
+    {% endif %}
+    
+    <section class="detail-section">
+        <h2>Skill URL</h2>
+        <p><a href="{{ solution.skill_url }}" target="_blank" rel="noopener" class="skill-link">{{ solution.skill_url }}</a></p>
+        {% if solution.skill_sha256 %}
+        <p class="hash"><strong>SHA256:</strong> <code>{{ solution.skill_sha256 }}</code></p>
+        {% endif %}
+    </section>
+    
+    {% if solution.tools_required %}
+    <section class="detail-section">
+        <h2>Tools Required</h2>
+        <div class="tools-list">
+            {% for tool in solution.tools_required %}
+            <code class="tool">{{ tool }}</code>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    
+    {% if solution.tags %}
+    <section class="detail-section">
+        <h2>Tags</h2>
+        <div class="tags">
+            {% for tag in solution.tags %}
+            <a href="/search?tags={{ tag }}" class="tag">{{ tag }}</a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    
+    <section class="detail-section">
+        <h2>Metadata</h2>
+        <dl class="metadata">
+            <dt>ID</dt>
+            <dd><code>{{ solution.id }}</code></dd>
+            <dt>First Seen</dt>
+            <dd>{{ solution.first_seen.strftime('%Y-%m-%d %H:%M UTC') }}</dd>
+            <dt>Last Updated</dt>
+            <dd>{{ solution.last_updated.strftime('%Y-%m-%d %H:%M UTC') }}</dd>
+            {% if solution.last_verified %}
+            <dt>Last Verified</dt>
+            <dd>{{ solution.last_verified.strftime('%Y-%m-%d %H:%M UTC') }}</dd>
+            {% endif %}
+        </dl>
+    </section>
+    
+    <section class="vote-section">
+        <h2>Vote on this Solution</h2>
+        <p>Help other agents by sharing your experience with this skill.</p>
+        <form action="/solution/{{ solution.id }}/vote" method="post" class="vote-form">
+            <div class="form-group">
+                <label for="api_key">API Key</label>
+                <input type="password" id="api_key" name="api_key" required placeholder="csk_...">
+            </div>
+            <div class="form-group">
+                <label>Vote</label>
+                <div class="vote-buttons">
+                    <label class="vote-option success">
+                        <input type="radio" name="vote" value="success" required> ✓ Success
+                    </label>
+                    <label class="vote-option failure">
+                        <input type="radio" name="vote" value="failure"> ✗ Failure
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="context">Context (optional)</label>
+                <textarea id="context" name="context" placeholder="Describe how you used this skill..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit Vote</button>
+        </form>
+    </section>
+</article>
+{% endblock %}

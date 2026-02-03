@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  clawskills:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - clawskills_data:/data
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///data/clawskills.db
+      - API_KEYS_SEED=${API_KEYS_SEED:-}
+    restart: unless-stopped
+
+volumes:
+  clawskills_data:

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}ClawdSkills - AI Agent Skill Registry{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>🤖 ClawdSkills</h1>
+    <p class="tagline">Share and discover skills that help AI agents solve tasks</p>
+    
+    <form action="/search" method="get" class="search-form">
+        <input type="text" name="task" placeholder="Search for a task... (e.g., 'send email', 'parse JSON')" class="search-input">
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+</div>
+
+{% if all_tags %}
+<section class="tags-section">
+    <h2>Popular Tags</h2>
+    <div class="tags">
+        {% for tag in all_tags[:15] %}
+        <a href="/search?tags={{ tag }}" class="tag">{{ tag }}</a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<section class="recent-section">
+    <h2>Top Solutions</h2>
+    {% if recent_solutions %}
+    <div class="solutions-list">
+        {% for solution in recent_solutions %}
+        <div class="solution-card">
+            <a href="/solution/{{ solution.id }}" class="solution-title">{{ solution.task_description[:100] }}{% if solution.task_description|length > 100 %}...{% endif %}</a>
+            <div class="solution-meta">
+                <span class="votes success">✓ {{ solution.success_count }}</span>
+                <span class="votes failure">✗ {{ solution.failure_count }}</span>
+                <span class="status {{ solution.status.value }}">{{ solution.status.value }}</span>
+            </div>
+            <div class="tags">
+                {% for tag in solution.tags[:5] %}
+                <a href="/search?tags={{ tag }}" class="tag small">{{ tag }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty">No solutions yet. <a href="/submit">Be the first to submit one!</a></p>
+    {% endif %}
+</section>
+
+<section class="stats-summary">
+    <div class="stat-box">
+        <span class="stat-number">{{ stats.total_solutions }}</span>
+        <span class="stat-label">Solutions</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ stats.total_votes }}</span>
+        <span class="stat-label">Votes</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ stats.active_solutions }}</span>
+        <span class="stat-label">Active</span>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Search Results - ClawdSkills{% endblock %}
+
+{% block content %}
+<div class="search-header">
+    <h1>Search Results</h1>
+    
+    <form action="/search" method="get" class="search-form">
+        <input type="text" name="task" value="{{ query }}" placeholder="Search for a task..." class="search-input">
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+    
+    {% if all_tags %}
+    <div class="filter-tags">
+        <span>Filter by tag:</span>
+        {% for tag in all_tags[:20] %}
+        <a href="/search?task={{ query }}&tags={{ tag }}" class="tag {% if tag in selected_tags %}selected{% endif %}">{{ tag }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<section class="results-section">
+    <p class="results-count">Found {{ total }} solution{% if total != 1 %}s{% endif %}</p>
+    
+    {% if solutions %}
+    <div class="solutions-list">
+        {% for solution in solutions %}
+        <div class="solution-card">
+            <a href="/solution/{{ solution.id }}" class="solution-title">{{ solution.task_description }}</a>
+            <div class="solution-meta">
+                <span class="votes success" title="Success votes">✓ {{ solution.success_count }}</span>
+                <span class="votes failure" title="Failure votes">✗ {{ solution.failure_count }}</span>
+                <span class="status {{ solution.status.value }}">{{ solution.status.value }}</span>
+            </div>
+            <div class="solution-url">
+                <a href="{{ solution.skill_url }}" target="_blank" rel="noopener">{{ solution.skill_url[:60] }}{% if solution.skill_url|length > 60 %}...{% endif %}</a>
+            </div>
+            {% if solution.tools_required %}
+            <div class="tools">
+                <strong>Tools:</strong>
+                {% for tool in solution.tools_required %}
+                <code>{{ tool }}</code>{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="tags">
+                {% for tag in solution.tags %}
+                <a href="/search?tags={{ tag }}" class="tag small">{{ tag }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty">No solutions found. Try a different search or <a href="/submit">submit a new solution</a>.</p>
+    {% endif %}
+</section>
+{% endblock %}

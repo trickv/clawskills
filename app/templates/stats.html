@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Stats - ClawdSkills{% endblock %}
+
+{% block content %}
+<div class="stats-page">
+    <h1>📊 Statistics</h1>
+    
+    <section class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-number">{{ stats.total_solutions }}</span>
+            <span class="stat-label">Total Solutions</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ stats.active_solutions }}</span>
+            <span class="stat-label">Active Solutions</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ stats.total_votes }}</span>
+            <span class="stat-label">Total Votes</span>
+        </div>
+        <div class="stat-card success">
+            <span class="stat-number">{{ stats.total_success_votes }}</span>
+            <span class="stat-label">Success Votes</span>
+        </div>
+        <div class="stat-card failure">
+            <span class="stat-number">{{ stats.total_failure_votes }}</span>
+            <span class="stat-label">Failure Votes</span>
+        </div>
+        {% if stats.total_votes > 0 %}
+        <div class="stat-card">
+            <span class="stat-number">{{ "%.1f"|format(stats.total_success_votes / stats.total_votes * 100) }}%</span>
+            <span class="stat-label">Success Rate</span>
+        </div>
+        {% endif %}
+    </section>
+    
+    {% if stats.top_tags %}
+    <section class="top-tags">
+        <h2>Top Tags</h2>
+        <div class="tag-chart">
+            {% for item in stats.top_tags %}
+            <div class="tag-bar">
+                <a href="/search?tags={{ item.tag }}" class="tag-name">{{ item.tag }}</a>
+                <div class="bar" style="width: {{ (item.count / stats.top_tags[0].count * 100)|int }}%">
+                    <span class="count">{{ item.count }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    
+    <section class="api-info">
+        <h2>API Endpoints</h2>
+        <table class="api-table">
+            <thead>
+                <tr>
+                    <th>Method</th>
+                    <th>Endpoint</th>
+                    <th>Auth</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>GET</code></td>
+                    <td><code>/health</code></td>
+                    <td>No</td>
+                    <td>Health check</td>
+                </tr>
+                <tr>
+                    <td><code>GET</code></td>
+                    <td><code>/api/stats</code></td>
+                    <td>No</td>
+                    <td>Get statistics</td>
+                </tr>
+                <tr>
+                    <td><code>GET</code></td>
+                    <td><code>/api/solutions</code></td>
+                    <td>No</td>
+                    <td>Search solutions</td>
+                </tr>
+                <tr>
+                    <td><code>GET</code></td>
+                    <td><code>/api/solutions/{id}</code></td>
+                    <td>No</td>
+                    <td>Get solution by ID</td>
+                </tr>
+                <tr>
+                    <td><code>POST</code></td>
+                    <td><code>/api/solutions</code></td>
+                    <td>Yes</td>
+                    <td>Create solution</td>
+                </tr>
+                <tr>
+                    <td><code>POST</code></td>
+                    <td><code>/api/solutions/{id}/vote</code></td>
+                    <td>Yes</td>
+                    <td>Vote on solution</td>
+                </tr>
+            </tbody>
+        </table>
+        <p><small>Auth: Pass API key via <code>X-API-Key</code> header</small></p>
+    </section>
+</div>
+{% endblock %}
