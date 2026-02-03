@@ -350,3 +350,12 @@ async def web_stats(request: Request, db: AsyncSession = Depends(get_db)):
         "request": request,
         "stats": stats,
     })
+
+
+@app.get("/about", response_class=HTMLResponse, tags=["Web UI"])
+@limiter.limit("100/minute")
+async def web_about(request: Request):
+    """About page."""
+    return templates.TemplateResponse("about.html", {
+        "request": request,
+    })
