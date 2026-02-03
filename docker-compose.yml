@@ -12,7 +12,7 @@ services:
       - traefik
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.clawskills.rule=Host(`clawskills.home.v9n.us`)"
+      - "traefik.http.routers.clawskills.rule=Host(`clawskills.home.v9n.us`) || Host(`clawskills.tech`)"
       - "traefik.http.routers.clawskills.entrypoints=websecure"
       - "traefik.http.routers.clawskills.tls.certresolver=le"
       - "traefik.http.services.clawskills.loadbalancer.server.port=8000"
