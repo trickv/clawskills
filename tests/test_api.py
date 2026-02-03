@@ -1,6 +1,7 @@
 """Tests for ClawdSkills API."""
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 import os
 
@@ -13,14 +14,14 @@ from app.auth import generate_api_key
 from app.crud import create_api_key
 
 
-@pytest.fixture(autouse=True)
+@pytest_asyncio.fixture(autouse=True)
 async def setup_db():
     """Initialize database for each test."""
     await init_db()
     yield
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def api_key() -> str:
     """Create and return a test API key."""
     raw_key, key_hash = generate_api_key()
@@ -29,7 +30,7 @@ async def api_key() -> str:
     return raw_key
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def client():
     """Create test client."""
     transport = ASGITransport(app=app)

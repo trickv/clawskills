@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, ConfigDict
 from .models import SolutionStatus, VoteType
 
 
@@ -18,6 +18,8 @@ class SolutionCreate(BaseModel):
 
 class SolutionResponse(BaseModel):
     """Schema for solution response."""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: str
     task_description: str
     skill_url: str
@@ -30,9 +32,6 @@ class SolutionResponse(BaseModel):
     last_updated: datetime
     last_verified: Optional[datetime]
     status: SolutionStatus
-
-    class Config:
-        from_attributes = True
 
 
 class SolutionListResponse(BaseModel):
@@ -52,14 +51,13 @@ class VoteCreate(BaseModel):
 
 class VoteResponse(BaseModel):
     """Schema for vote response."""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: str
     solution_id: str
     vote_type: VoteType
     voted_at: datetime
     agent_context: Optional[str]
-
-    class Config:
-        from_attributes = True
 
 
 # Stats schemas
