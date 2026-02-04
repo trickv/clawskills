@@ -22,6 +22,7 @@ from .schemas import (
 )
 from .auth import get_api_key, hash_key
 from . import crud
+from .crud import SkillURLValidationError
 
 # Configure logging
 logging.basicConfig(
@@ -162,9 +163,13 @@ async def create_solution(
     api_key: APIKey = Depends(get_api_key),
 ):
     """Create a new solution (requires API key)."""
-    db_solution = await crud.create_solution(db, solution, api_key.key_hash)
-    logger.info(f"Solution created: {db_solution.id} by key {api_key.label or api_key.id}")
-    return SolutionResponse.model_validate(db_solution)
+    try:
+        db_solution = await crud.create_solution(db, solution, api_key.key_hash)
+        logger.info(f"Solution created: {db_solution.id} by key {api_key.label or api_key.id}")
+        return SolutionResponse.model_validate(db_solution)
+    except SkillURLValidationError as e:
+        logger.warning(f"Solution rejected: {solution.skill_url} - {e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.post("/api/solutions/{solution_id}/vote", response_model=VoteResponse, tags=["Votes"])

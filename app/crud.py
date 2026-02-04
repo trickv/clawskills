@@ -1,13 +1,79 @@
 """Database CRUD operations."""
 
+import logging
 from datetime import datetime
 from typing import Optional
 from collections import Counter
+import httpx
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from .models import Solution, Vote, APIKey, SolutionStatus, VoteType
 from .schemas import SolutionCreate, VoteCreate
 from .auth import hash_key
+
+logger = logging.getLogger(__name__)
+
+
+class SkillURLValidationError(Exception):
+    """Raised when a skill URL fails validation."""
+    pass
+
+
+async def validate_skill_url(url: str) -> tuple[bool, str]:
+    """
+    Validate that a skill URL points to a valid skill file.
+    
+    Returns (is_valid, reason).
+    """
+    # Allowed content types for skill files
+    ALLOWED_CONTENT_TYPES = [
+        'text/plain',
+        'text/markdown',
+        'text/x-markdown',
+        'text/html',  # GitHub renders markdown as HTML sometimes
+        'application/octet-stream',  # Some servers don't set proper content-type
+    ]
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+            response = await client.get(url, headers={
+                'User-Agent': 'ClawSkills/1.0 (skill-validator)'
+            })
+            
+            # Check status code
+            if response.status_code != 200:
+                reason = f"URL returned status {response.status_code}"
+                logger.warning(f"Skill URL validation failed: {url} - {reason}")
+                return False, reason
+            
+            # Check content type
+            content_type = response.headers.get('content-type', '').lower().split(';')[0].strip()
+            if content_type and content_type not in ALLOWED_CONTENT_TYPES:
+                reason = f"Invalid content type: {content_type}"
+                logger.warning(f"Skill URL validation failed: {url} - {reason}")
+                return False, reason
+            
+            # Check for text content (basic sanity check)
+            content = response.text[:2000]  # Only check first 2KB
+            
+            # Bonus: check for YAML frontmatter (common in skill files)
+            has_frontmatter = content.strip().startswith('---')
+            
+            logger.info(f"Skill URL validated: {url} (content-type: {content_type}, frontmatter: {has_frontmatter})")
+            return True, "OK"
+            
+    except httpx.TimeoutException:
+        reason = "Request timed out"
+        logger.warning(f"Skill URL validation failed: {url} - {reason}")
+        return False, reason
+    except httpx.RequestError as e:
+        reason = f"Request failed: {str(e)}"
+        logger.warning(f"Skill URL validation failed: {url} - {reason}")
+        return False, reason
+    except Exception as e:
+        reason = f"Unexpected error: {str(e)}"
+        logger.error(f"Skill URL validation error: {url} - {reason}")
+        return False, reason
 
 
 # Solution operations
@@ -17,6 +83,11 @@ async def create_solution(
     api_key_hash: str,
 ) -> Solution:
     """Create a new solution."""
+    # Validate the skill URL before creating
+    is_valid, reason = await validate_skill_url(solution.skill_url)
+    if not is_valid:
+        raise SkillURLValidationError(f"Skill URL validation failed: {reason}")
+    
     db_solution = Solution(
         task_description=solution.task_description,
         skill_url=solution.skill_url,
