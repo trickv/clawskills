@@ -9,8 +9,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import __version__
@@ -30,8 +30,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Rate limiting
-limiter = Limiter(key_func=get_remote_address)
+
+def get_real_ip(request: Request) -> str:
+    """Get real client IP, respecting X-Forwarded-For from reverse proxy."""
+    # X-Forwarded-For can be comma-separated list: client, proxy1, proxy2
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        # First IP is the original client
+        return forwarded.split(",")[0].strip()
+    # X-Real-IP is simpler alternative
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip.strip()
+    # Fallback to direct connection IP
+    return request.client.host if request.client else "unknown"
+
+
+# Rate limiting with real IP detection
+limiter = Limiter(key_func=get_real_ip)
 
 
 @asynccontextmanager
@@ -69,6 +85,7 @@ app = FastAPI(
 # Add rate limiting
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # CORS
 app.add_middleware(
