@@ -376,3 +376,12 @@ async def web_about(request: Request):
     return templates.TemplateResponse("about.html", {
         "request": request,
     })
+
+
+@app.get("/skill.md", tags=["Skills"])
+@limiter.limit("100/minute")
+async def skill_md(request: Request):
+    """Serve the SKILL.md file for AI agents."""
+    from fastapi.responses import FileResponse
+    skill_path = os.path.join(BASE_DIR, "SKILL.md")
+    return FileResponse(skill_path, media_type="text/markdown")
