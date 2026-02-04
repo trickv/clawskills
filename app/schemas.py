@@ -69,6 +69,7 @@ class StatsResponse(BaseModel):
     total_failure_votes: int
     top_tags: list[dict]
     active_solutions: int
+    total_agents: int
 
 
 # Health check

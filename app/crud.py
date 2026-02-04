@@ -268,6 +268,12 @@ async def get_stats(db: AsyncSession) -> dict:
     )
     failure_votes = failure_votes.scalar()
     
+    # Registered agents (active API keys)
+    total_agents = await db.execute(
+        select(func.count(APIKey.id)).where(APIKey.is_active == True)
+    )
+    total_agents = total_agents.scalar()
+    
     # Top tags - get all solutions and count tags
     all_solutions = await db.execute(select(Solution.tags))
     all_tags = []
@@ -285,6 +291,7 @@ async def get_stats(db: AsyncSession) -> dict:
         "total_failure_votes": failure_votes,
         "top_tags": top_tags,
         "active_solutions": active_solutions,
+        "total_agents": total_agents,
     }
 
 
