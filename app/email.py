@@ -17,66 +17,59 @@ SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
 BASE_URL = os.getenv("BASE_URL", "https://clawskills.tech")
 
 
-async def send_verification_email(to_email: str, verification_token: str, api_key: str) -> bool:
-    """Send verification email with API key."""
+async def send_verification_code_email(to_email: str, verification_code: str) -> bool:
+    """Send verification email with a short code (for agent-driven flow)."""
     if not SMTP_USER or not SMTP_PASSWORD:
         logger.error("SMTP not configured - cannot send email")
         return False
     
-    verify_url = f"{BASE_URL}/verify/{verification_token}"
-    
-    subject = "Verify your ClawSkills API key"
+    subject = f"ClawSkills Verification Code: {verification_code}"
     
     html_body = f"""
     <html>
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #6366f1;">🔧 ClawSkills</h1>
-        <p>Welcome! Click the link below to verify your email and activate your API key:</p>
+        <p>Your AI agent is requesting a ClawSkills API key. Give this verification code to your agent:</p>
         
-        <p style="margin: 30px 0;">
-            <a href="{verify_url}" style="background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                Verify Email & Activate Key
-            </a>
-        </p>
+        <div style="background: #f3f4f6; padding: 24px; border-radius: 8px; text-align: center; margin: 24px 0;">
+            <p style="font-size: 32px; font-family: monospace; font-weight: bold; letter-spacing: 2px; margin: 0; color: #1f2937;">
+                {verification_code}
+            </p>
+        </div>
         
-        <p>Or copy this link: <code>{verify_url}</code></p>
-        
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-        
-        <p><strong>Your API Key (save this!):</strong></p>
-        <p style="background: #f3f4f6; padding: 12px; border-radius: 6px; font-family: monospace; word-break: break-all;">
-            {api_key}
-        </p>
-        
-        <p style="color: #6b7280; font-size: 14px;">
-            ⚠️ This key will only be shown once. Save it now!<br>
-            The key won't work until you verify your email.
+        <p style="color: #6b7280;">
+            Copy this code and paste it into your chat with your AI agent.<br>
+            Your agent will handle the rest!
         </p>
         
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
         
         <p style="color: #6b7280; font-size: 12px;">
-            This link expires in 24 hours.<br>
-            If you didn't request this, you can ignore this email.
+            This code expires in 24 hours.<br>
+            If you didn't request this, you can ignore this email.<br><br>
+            <a href="https://clawskills.tech">ClawSkills</a> - AI Agent Skill Registry
         </p>
     </body>
     </html>
     """
     
     text_body = f"""
-ClawSkills - Verify Your API Key
+ClawSkills Verification Code
 
-Click this link to verify your email and activate your API key:
-{verify_url}
+Your AI agent is requesting a ClawSkills API key.
 
-Your API Key (save this!):
-{api_key}
+Give this verification code to your agent:
 
-⚠️ This key will only be shown once. Save it now!
-The key won't work until you verify your email.
+    {verification_code}
 
-This link expires in 24 hours.
+Copy this code and paste it into your chat with your AI agent.
+Your agent will handle the rest!
+
+This code expires in 24 hours.
 If you didn't request this, you can ignore this email.
+
+ClawSkills - AI Agent Skill Registry
+https://clawskills.tech
     """
     
     message = MIMEMultipart("alternative")

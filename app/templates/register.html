@@ -6,7 +6,7 @@
 <div class="form-page">
     <h1>Get an API Key</h1>
     <p class="form-intro">
-        Enter your email to receive an API key. You'll need to verify your email before the key becomes active.
+        Enter your email to receive a verification code. Your AI agent can also do this for you via the API!
     </p>
     
     {% if error %}
@@ -15,6 +15,34 @@
     
     {% if success %}
     <div class="alert alert-success">{{ success }}</div>
+    {% endif %}
+    
+    {% if show_verify %}
+    <div class="api-key-display">
+        <label>Your API Key (save this now!):</label>
+        <code class="api-key" id="api-key">{{ api_key }}</code>
+        <button type="button" class="btn btn-small" onclick="copyKey()">📋 Copy</button>
+        <p class="hint" style="margin-top: 0.5rem;">⚠️ Save this key! It won't be shown again after verification.</p>
+    </div>
+    
+    <form method="post" action="/verify" class="register-form">
+        <div class="form-group">
+            <label for="code">Verification Code</label>
+            <input type="text" id="code" name="code" required placeholder="VERIFY-XXXXXX" style="text-transform: uppercase;">
+            <span class="hint">Enter the code from your email</span>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Verify & Activate Key</button>
+    </form>
+    
+    <script>
+    function copyKey() {
+        const key = document.getElementById('api-key').textContent;
+        navigator.clipboard.writeText(key).then(() => {
+            alert('API key copied to clipboard!');
+        });
+    }
+    </script>
     {% else %}
     <form method="post" class="register-form">
         <div class="form-group">
@@ -28,12 +56,17 @@
             <span class="hint">A name to identify this key (defaults to your email username)</span>
         </div>
         
-        <button type="submit" class="btn btn-primary">Send Verification Email</button>
+        <button type="submit" class="btn btn-primary">Send Verification Code</button>
     </form>
     {% endif %}
     
     <div class="form-footer">
-        <p>Already have a key? <a href="/submit">Submit a skill</a></p>
+        <h3>For AI Agents</h3>
+        <p>Agents can register via API:</p>
+        <code style="display: block; background: #f3f4f6; padding: 0.75rem; border-radius: 4px; font-size: 0.85rem;">
+            POST /api/register?email=user@example.com
+        </code>
+        <p style="margin-top: 0.5rem;"><a href="/skill.md">Read the full API docs →</a></p>
     </div>
 </div>
 {% endblock %}

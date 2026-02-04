@@ -393,12 +393,157 @@ async def skill_md(request: Request):
     return FileResponse(skill_path, media_type="text/markdown")
 
 
-# ============ Registration ============
+# ============ Registration API (for agents) ============
+
+@app.post("/api/register", tags=["Registration"])
+@limiter.limit("5/minute")
+async def api_register(
+    request: Request,
+    email: str = Query(..., description="Email address for verification"),
+    label: str = Query(None, description="Optional label for this API key"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Register for an API key (for agents).
+    
+    1. Agent calls this with user's email
+    2. User receives email with verification code
+    3. User gives code to agent
+    4. Agent calls /api/verify with code to activate key
+    """
+    import secrets
+    from .email import send_verification_code_email
+    from sqlalchemy import select
+    
+    email = email.strip().lower()
+    
+    # Basic email validation
+    if not email or "@" not in email or "." not in email:
+        raise HTTPException(status_code=400, detail="Invalid email address")
+    
+    # Check if email already has an active key
+    result = await db.execute(
+        select(APIKey).where(APIKey.email == email, APIKey.is_active == True)
+    )
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=400, 
+            detail="This email already has an active API key"
+        )
+    
+    # Check for recent pending registration (rate limit)
+    result = await db.execute(
+        select(PendingRegistration).where(
+            PendingRegistration.email == email,
+            PendingRegistration.verified == False,
+            PendingRegistration.expires_at > datetime.utcnow(),
+        )
+    )
+    existing = result.scalar_one_or_none()
+    if existing:
+        # Return the existing pending registration info
+        return {
+            "status": "pending",
+            "message": "Verification email already sent. Ask your human for the code.",
+            "api_key": existing.api_key_plain,
+            "email": email,
+        }
+    
+    # Generate API key and short verification code
+    api_key_plain = f"csk_{secrets.token_urlsafe(32)}"
+    # Short code: VERIFY-XXXX (easy to read/type)
+    verification_code = f"VERIFY-{secrets.token_hex(3).upper()}"
+    key_hash = hash_key(api_key_plain)
+    
+    # Create pending registration
+    pending = PendingRegistration(
+        email=email,
+        verification_token=verification_code,
+        api_key_plain=api_key_plain,
+        api_key_hash=key_hash,
+        label=label or email.split("@")[0],
+        expires_at=datetime.utcnow() + timedelta(hours=24),
+    )
+    db.add(pending)
+    await db.commit()
+    
+    # Send verification email with code
+    email_sent = await send_verification_code_email(email, verification_code)
+    
+    if not email_sent:
+        logger.error(f"Failed to send registration email to {email}")
+        raise HTTPException(status_code=500, detail="Failed to send verification email")
+    
+    logger.info(f"Registration email sent to {email}")
+    
+    return {
+        "status": "pending",
+        "message": "Verification email sent. Ask your human for the code from their email.",
+        "api_key": api_key_plain,
+        "email": email,
+        "note": "Save this API key! It won't be shown again. The key won't work until verified."
+    }
+
+
+@app.post("/api/verify", tags=["Registration"])
+@limiter.limit("10/minute")
+async def api_verify(
+    request: Request,
+    code: str = Query(..., description="Verification code from email"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Verify email and activate API key (for agents).
+    
+    Agent calls this with the verification code the human received via email.
+    """
+    from sqlalchemy import select
+    
+    code = code.strip().upper()
+    
+    # Find pending registration
+    result = await db.execute(
+        select(PendingRegistration).where(
+            PendingRegistration.verification_token == code,
+            PendingRegistration.verified == False,
+        )
+    )
+    pending = result.scalar_one_or_none()
+    
+    if not pending:
+        raise HTTPException(status_code=400, detail="Invalid verification code")
+    
+    if pending.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Verification code expired. Please register again.")
+    
+    # Create the actual API key
+    api_key = APIKey(
+        key_hash=pending.api_key_hash,
+        label=pending.label,
+        email=pending.email,
+    )
+    db.add(api_key)
+    
+    # Mark as verified
+    pending.verified = True
+    
+    await db.commit()
+    
+    logger.info(f"API key verified and activated for {pending.email}")
+    
+    return {
+        "status": "verified",
+        "message": "API key activated! You can now use ClawSkills.",
+        "api_key": pending.api_key_plain,
+    }
+
+
+# ============ Registration Web UI (fallback for humans) ============
 
 @app.get("/register", response_class=HTMLResponse, tags=["Registration"])
 @limiter.limit("20/minute")
 async def register_form(request: Request):
-    """Registration form page."""
+    """Registration form page (for humans without an agent)."""
     return templates.TemplateResponse("register.html", {
         "request": request,
         "error": None,
@@ -416,9 +561,7 @@ async def register_submit(
 ):
     """Handle registration form - send verification email."""
     import secrets
-    from datetime import timedelta
-    from .models import PendingRegistration
-    from .email import send_verification_email
+    from .email import send_verification_code_email
     from sqlalchemy import select
     
     email = email.strip().lower()
@@ -450,22 +593,25 @@ async def register_submit(
             PendingRegistration.expires_at > datetime.utcnow(),
         )
     )
-    if result.scalar_one_or_none():
+    existing = result.scalar_one_or_none()
+    if existing:
         return templates.TemplateResponse("register.html", {
             "request": request,
-            "error": "A verification email was already sent. Check your inbox or wait for it to expire.",
-            "success": None,
+            "error": None,
+            "success": f"Verification already pending. Check your email for the code, then enter it below.",
+            "show_verify": True,
+            "api_key": existing.api_key_plain,
         })
     
-    # Generate API key and verification token
+    # Generate API key and short verification code
     api_key_plain = f"csk_{secrets.token_urlsafe(32)}"
-    verification_token = secrets.token_urlsafe(32)
+    verification_code = f"VERIFY-{secrets.token_hex(3).upper()}"
     key_hash = hash_key(api_key_plain)
     
     # Create pending registration
     pending = PendingRegistration(
         email=email,
-        verification_token=verification_token,
+        verification_token=verification_code,
         api_key_plain=api_key_plain,
         api_key_hash=key_hash,
         label=label or email.split("@")[0],
@@ -474,15 +620,17 @@ async def register_submit(
     db.add(pending)
     await db.commit()
     
-    # Send verification email
-    email_sent = await send_verification_email(email, verification_token, api_key_plain)
+    # Send verification email with code
+    email_sent = await send_verification_code_email(email, verification_code)
     
     if email_sent:
         logger.info(f"Registration email sent to {email}")
         return templates.TemplateResponse("register.html", {
             "request": request,
             "error": None,
-            "success": f"Verification email sent to {email}. Check your inbox!",
+            "success": f"Verification email sent to {email}. Enter the code below.",
+            "show_verify": True,
+            "api_key": api_key_plain,
         })
     else:
         logger.error(f"Failed to send registration email to {email}")
@@ -493,21 +641,21 @@ async def register_submit(
         })
 
 
-@app.get("/verify/{token}", response_class=HTMLResponse, tags=["Registration"])
-@limiter.limit("20/minute")
-async def verify_email(
+@app.post("/verify", response_class=HTMLResponse, tags=["Registration"])
+@limiter.limit("10/minute")
+async def verify_web(
     request: Request,
-    token: str,
+    code: str = Form(...),
     db: AsyncSession = Depends(get_db),
 ):
-    """Verify email and activate API key."""
-    from .models import PendingRegistration
+    """Verify via web form."""
     from sqlalchemy import select
     
-    # Find pending registration
+    code = code.strip().upper()
+    
     result = await db.execute(
         select(PendingRegistration).where(
-            PendingRegistration.verification_token == token,
+            PendingRegistration.verification_token == code,
             PendingRegistration.verified == False,
         )
     )
@@ -516,14 +664,14 @@ async def verify_email(
     if not pending:
         return templates.TemplateResponse("verify.html", {
             "request": request,
-            "error": "Invalid or expired verification link.",
+            "error": "Invalid verification code.",
             "api_key": None,
         })
     
     if pending.expires_at < datetime.utcnow():
         return templates.TemplateResponse("verify.html", {
             "request": request,
-            "error": "This verification link has expired. Please register again.",
+            "error": "Verification code expired. Please register again.",
             "api_key": None,
         })
     
@@ -534,10 +682,7 @@ async def verify_email(
         email=pending.email,
     )
     db.add(api_key)
-    
-    # Mark as verified
     pending.verified = True
-    
     await db.commit()
     
     logger.info(f"API key verified and activated for {pending.email}")
