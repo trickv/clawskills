@@ -19,12 +19,14 @@ class SkillURLValidationError(Exception):
     pass
 
 
-async def validate_skill_url(url: str) -> tuple[bool, str]:
+async def validate_skill_url(url: str) -> tuple[bool, str, Optional[str]]:
     """
     Validate that a skill URL points to a valid skill file.
     
-    Returns (is_valid, reason).
+    Returns (is_valid, reason, sha256_hash).
     """
+    import hashlib
+    
     # Allowed content types for skill files
     ALLOWED_CONTENT_TYPES = [
         'text/plain',
@@ -44,36 +46,40 @@ async def validate_skill_url(url: str) -> tuple[bool, str]:
             if response.status_code != 200:
                 reason = f"URL returned status {response.status_code}"
                 logger.warning(f"Skill URL validation failed: {url} - {reason}")
-                return False, reason
+                return False, reason, None
             
             # Check content type
             content_type = response.headers.get('content-type', '').lower().split(';')[0].strip()
             if content_type and content_type not in ALLOWED_CONTENT_TYPES:
                 reason = f"Invalid content type: {content_type}"
                 logger.warning(f"Skill URL validation failed: {url} - {reason}")
-                return False, reason
+                return False, reason, None
             
-            # Check for text content (basic sanity check)
-            content = response.text[:2000]  # Only check first 2KB
+            # Get full content for hashing
+            content_bytes = response.content
+            content_text = response.text[:2000]  # Only check first 2KB for validation
+            
+            # Compute SHA256 hash
+            sha256_hash = hashlib.sha256(content_bytes).hexdigest()
             
             # Bonus: check for YAML frontmatter (common in skill files)
-            has_frontmatter = content.strip().startswith('---')
+            has_frontmatter = content_text.strip().startswith('---')
             
-            logger.info(f"Skill URL validated: {url} (content-type: {content_type}, frontmatter: {has_frontmatter})")
-            return True, "OK"
+            logger.info(f"Skill URL validated: {url} (content-type: {content_type}, frontmatter: {has_frontmatter}, sha256: {sha256_hash[:16]}...)")
+            return True, "OK", sha256_hash
             
     except httpx.TimeoutException:
         reason = "Request timed out"
         logger.warning(f"Skill URL validation failed: {url} - {reason}")
-        return False, reason
+        return False, reason, None
     except httpx.RequestError as e:
         reason = f"Request failed: {str(e)}"
         logger.warning(f"Skill URL validation failed: {url} - {reason}")
-        return False, reason
+        return False, reason, None
     except Exception as e:
         reason = f"Unexpected error: {str(e)}"
         logger.error(f"Skill URL validation error: {url} - {reason}")
-        return False, reason
+        return False, reason, None
 
 
 # Solution operations
@@ -83,15 +89,15 @@ async def create_solution(
     api_key_hash: str,
 ) -> Solution:
     """Create a new solution."""
-    # Validate the skill URL before creating
-    is_valid, reason = await validate_skill_url(solution.skill_url)
+    # Validate the skill URL and compute SHA256
+    is_valid, reason, sha256_hash = await validate_skill_url(solution.skill_url)
     if not is_valid:
         raise SkillURLValidationError(f"Skill URL validation failed: {reason}")
     
     db_solution = Solution(
         task_description=solution.task_description,
         skill_url=solution.skill_url,
-        skill_sha256=solution.skill_sha256,
+        skill_sha256=sha256_hash,  # Server-computed, not user input
         tools_required=solution.tools_required,
         tags=solution.tags,
         submitter_key_hash=api_key_hash,

@@ -11,7 +11,7 @@ class SolutionCreate(BaseModel):
     """Schema for creating a new solution."""
     task_description: str = Field(..., min_length=10, max_length=5000)
     skill_url: str = Field(..., max_length=2048)
-    skill_sha256: Optional[str] = Field(None, pattern=r"^[a-fA-F0-9]{64}$")
+    # Note: skill_sha256 is computed server-side, not accepted from user input
     tools_required: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
 
