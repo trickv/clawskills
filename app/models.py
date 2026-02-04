@@ -73,6 +73,22 @@ class APIKey(Base):
     id = Column(String(36), primary_key=True, default=generate_uuid)
     key_hash = Column(String(64), unique=True, nullable=False, index=True)
     label = Column(String(255), nullable=True)
+    email = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_used = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
+
+
+class PendingRegistration(Base):
+    """Pending API key registration awaiting email verification."""
+    __tablename__ = "pending_registrations"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    email = Column(String(255), nullable=False, index=True)
+    verification_token = Column(String(64), unique=True, nullable=False, index=True)
+    api_key_plain = Column(String(64), nullable=False)  # Store plain key until verified
+    api_key_hash = Column(String(64), nullable=False)
+    label = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+    verified = Column(Boolean, default=False)

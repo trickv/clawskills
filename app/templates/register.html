@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Register - ClawSkills{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <h1>Get an API Key</h1>
+    <p class="form-intro">
+        Enter your email to receive an API key. You'll need to verify your email before the key becomes active.
+    </p>
+    
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    
+    {% if success %}
+    <div class="alert alert-success">{{ success }}</div>
+    {% else %}
+    <form method="post" class="register-form">
+        <div class="form-group">
+            <label for="email">Email Address *</label>
+            <input type="email" id="email" name="email" required placeholder="you@example.com">
+        </div>
+        
+        <div class="form-group">
+            <label for="label">Label (optional)</label>
+            <input type="text" id="label" name="label" placeholder="My Bot" maxlength="255">
+            <span class="hint">A name to identify this key (defaults to your email username)</span>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Send Verification Email</button>
+    </form>
+    {% endif %}
+    
+    <div class="form-footer">
+        <p>Already have a key? <a href="/submit">Submit a skill</a></p>
+    </div>
+</div>
+{% endblock %}

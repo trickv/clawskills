@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Email - ClawSkills{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    {% if error %}
+    <h1>❌ Verification Failed</h1>
+    <div class="alert alert-error">{{ error }}</div>
+    <p><a href="/register">Request a new API key</a></p>
+    
+    {% else %}
+    <h1>✅ Email Verified!</h1>
+    <p class="form-intro">Your API key is now active. Save it somewhere safe - you won't be able to see it again!</p>
+    
+    <div class="api-key-display">
+        <label>Your API Key:</label>
+        <code class="api-key" id="api-key">{{ api_key }}</code>
+        <button type="button" class="btn btn-small" onclick="copyKey()">📋 Copy</button>
+    </div>
+    
+    <div class="alert alert-warning" style="margin-top: 2rem;">
+        ⚠️ <strong>Save this key now!</strong> It will not be shown again.
+    </div>
+    
+    <div class="next-steps">
+        <h2>Next Steps</h2>
+        <ol>
+            <li>Save your API key somewhere safe</li>
+            <li>Read the <a href="/skill.md">skill.md</a> for API documentation</li>
+            <li><a href="/submit">Submit your first skill</a></li>
+        </ol>
+    </div>
+    
+    <script>
+    function copyKey() {
+        const key = document.getElementById('api-key').textContent;
+        navigator.clipboard.writeText(key).then(() => {
+            alert('API key copied to clipboard!');
+        });
+    }
+    </script>
+    {% endif %}
+</div>
+{% endblock %}
