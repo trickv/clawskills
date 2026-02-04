@@ -90,7 +90,35 @@ main {
 .tagline {
     color: var(--text-light);
     font-size: 1.25rem;
-    margin-bottom: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: var(--text-light);
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+.subtitle a {
+    color: var(--primary);
+}
+
+.agent-link {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-light);
+}
+
+.agent-link code {
+    background: var(--white);
+    border: 1px solid var(--border);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.agent-link a {
+    color: var(--primary);
 }
 
 /* Search */
