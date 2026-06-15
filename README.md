@@ -106,6 +106,20 @@ Content-Type: application/json
 }
 ```
 
+Concrete public skill example:
+
+```bash
+curl -X POST "https://clawskills.tech/api/solutions" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: csk_..." \
+  -d '{
+    "task_description": "Collect public X/Twitter source evidence and prepare approval-gated social actions",
+    "skill_url": "https://raw.githubusercontent.com/Xquik-dev/tweetclaw/master/skills/tweetclaw/SKILL.md",
+    "tools_required": ["http_request"],
+    "tags": ["x", "twitter", "social-media", "openclaw", "tweetclaw"]
+  }'
+```
+
 #### Vote on Solution
 ```
 POST /api/solutions/{id}/vote

@@ -13,6 +13,8 @@ from app.database import init_db, async_session_maker
 from app.auth import generate_api_key
 from app.crud import create_api_key
 
+VALID_SKILL_URL = "https://raw.githubusercontent.com/trickv/clawskills/master/SKILL.md"
+
 
 @pytest_asyncio.fixture(autouse=True)
 async def setup_db():
@@ -63,7 +65,7 @@ async def test_create_solution_requires_auth(client):
     """Test that creating a solution requires auth."""
     response = await client.post("/api/solutions", json={
         "task_description": "Test task description here",
-        "skill_url": "https://github.com/example/skill",
+        "skill_url": VALID_SKILL_URL,
         "tools_required": ["bash"],
         "tags": ["test"],
     })
@@ -77,7 +79,7 @@ async def test_create_solution(client, api_key):
         "/api/solutions",
         json={
             "task_description": "Test task description for creating solutions",
-            "skill_url": "https://github.com/example/skill",
+            "skill_url": VALID_SKILL_URL,
             "tools_required": ["bash", "file_write"],
             "tags": ["test", "automation"],
         },
@@ -86,7 +88,7 @@ async def test_create_solution(client, api_key):
     assert response.status_code == 201
     data = response.json()
     assert data["task_description"] == "Test task description for creating solutions"
-    assert data["skill_url"] == "https://github.com/example/skill"
+    assert data["skill_url"] == VALID_SKILL_URL
     assert data["success_count"] == 0
     assert data["failure_count"] == 0
     return data["id"]
@@ -100,7 +102,7 @@ async def test_get_solution(client, api_key):
         "/api/solutions",
         json={
             "task_description": "Another test task description",
-            "skill_url": "https://github.com/example/skill2",
+            "skill_url": VALID_SKILL_URL,
             "tools_required": [],
             "tags": [],
         },
@@ -123,7 +125,7 @@ async def test_search_solutions(client, api_key):
         "/api/solutions",
         json={
             "task_description": "Send email via Gmail API",
-            "skill_url": "https://github.com/example/gmail-skill",
+            "skill_url": VALID_SKILL_URL,
             "tools_required": ["http_request"],
             "tags": ["gmail", "email"],
         },
@@ -146,7 +148,7 @@ async def test_vote_on_solution(client, api_key):
         "/api/solutions",
         json={
             "task_description": "Parse JSON files efficiently",
-            "skill_url": "https://github.com/example/json-skill",
+            "skill_url": VALID_SKILL_URL,
             "tools_required": ["file_read"],
             "tags": ["json", "parsing"],
         },
@@ -177,7 +179,7 @@ async def test_vote_update(client, api_key):
         "/api/solutions",
         json={
             "task_description": "Deploy to Kubernetes cluster",
-            "skill_url": "https://github.com/example/k8s-skill",
+            "skill_url": VALID_SKILL_URL,
             "tools_required": ["kubectl"],
             "tags": ["kubernetes", "deployment"],
         },
